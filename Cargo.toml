@@ -1,0 +1,11 @@
+[workspace]
+members = ["core"]
+resolver = "2"
+
+# Максимальная оптимизация релизной сборки: быстрый и маленький код.
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
