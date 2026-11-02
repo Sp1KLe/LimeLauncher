@@ -1,0 +1,67 @@
+name: Build LimeLauncher (full, with Java)
+
+# Собирает полноценный лаунчер на основе PojavLauncher (LGPL-3.0):
+# внутри уже есть Java 8/17/21 для arm64 и графика, поэтому Minecraft 1.18.2 запускается.
+
+on:
+  push:
+  workflow_dispatch:
+
+env:
+  # Зафиксированная версия PojavLauncher, чтобы сборка не ломалась от чужих обновлений.
+  POJAV_REPO: https://github.com/TeamPojavLauncher/PojavLauncher
+  POJAV_SHA: 94305d6a0c25bc4f415df1f52bac6f51870d5ad1
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout LimeLauncher
+        uses: actions/checkout@v4
+        with:
+          path: lime
+
+      - name: Fetch PojavLauncher (pinned)
+        run: |
+          mkdir pojav && cd pojav
+          git init -q
+          git remote add origin "$POJAV_REPO"
+          git fetch --depth 1 origin "$POJAV_SHA"
+          git checkout -q FETCH_HEAD
+          git submodule update --init --recursive --depth 1
+
+      - name: Apply LimeLauncher changes
+        run: bash lime/scripts/apply-lime.sh pojav
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Get LTW (graphics layer)
+        uses: dawidd6/action-download-artifact@v6
+        continue-on-error: true
+        with:
+          repo: MojoLauncher/LTW
+          workflow: android.yml
+          workflow_conclusion: success
+          name: output-aar
+          path: pojav/app_pojavlauncher/libs
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.5"
+
+      - name: Build APK (with Java runtimes)
+        working-directory: pojav
+        run: gradle :app_pojavlauncher:assembleFullDebug --no-daemon
+
+      - name: Collect APK
+        run: |
+          mkdir out
+          cp pojav/app_pojavlauncher/build/outputs/apk/full/debug/*.apk out/LimeLauncher.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LimeLauncher-full
+          path: out/LimeLauncher.apk
