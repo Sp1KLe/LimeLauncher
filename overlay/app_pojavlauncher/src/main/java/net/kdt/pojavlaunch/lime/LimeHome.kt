@@ -3,12 +3,12 @@ package net.kdt.pojavlaunch.lime
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,25 +23,28 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -56,8 +59,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -79,6 +85,8 @@ interface LimeHomeActions {
     fun openCommunity()
 }
 
+private class ActionItem(val label: String, val icon: ImageVector, val onClick: () -> Unit)
+
 @Composable
 fun LimeHome(model: LimeHomeModel, actions: LimeHomeActions) {
     var showAccounts by remember { mutableStateOf(false) }
@@ -93,6 +101,16 @@ fun LimeHome(model: LimeHomeModel, actions: LimeHomeActions) {
         }
     }
 
+    val items = listOf(
+        ActionItem("О лаунчере и новости", Icons.Rounded.Info, actions::openNews),
+        ActionItem("Раскладки управления", LimeIcons.Gamepad, actions::openControls),
+        ActionItem("Открыть папку игры", LimeIcons.Folder, actions::openGameFolder),
+        ActionItem("Запустить .jar файл", LimeIcons.Code, actions::installJar),
+        ActionItem("Поделиться логами", Icons.Rounded.Share, actions::shareLogs),
+        ActionItem("Настроить геймпад", Icons.Rounded.Build, actions::openGamepadMapper),
+        ActionItem("Сообщество", Icons.Rounded.Favorite, actions::openCommunity),
+    )
+
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val wide = maxWidth > maxHeight
@@ -100,53 +118,73 @@ fun LimeHome(model: LimeHomeModel, actions: LimeHomeActions) {
                 Row(
                     Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Column(
                         Modifier
-                            .weight(1f)
-                            .fillMaxSize()
+                            .weight(1.2f)
+                            .fillMaxHeight()
                             .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        AccountCard(model, onSwitch = { showAccounts = true })
-                        InstanceCard(
-                            model,
-                            onSwitch = { showInstances = true },
-                            onEdit = actions::editInstance,
-                        )
-                        QuickActions(actions)
+                        items.forEach { ActionRow(it) }
                     }
-                    PlayPanel(
-                        model = model,
-                        onPlay = actions::play,
+                    Card(
                         modifier = Modifier
                             .weight(1f)
-                            .fillMaxSize(),
-                    )
+                            .fillMaxHeight(),
+                        shape = MaterialTheme.shapes.large,
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    ) {
+                        Column(
+                            Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Column(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                                verticalArrangement = Arrangement.Center,
+                            ) {
+                                ProfileBlock(model, big = true, onClick = { showAccounts = true })
+                            }
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                VersionRow(model, onPick = { showInstances = true }, onEdit = actions::editInstance)
+                                PlayButton(onClick = actions::play, modifier = Modifier.navigationBarsPadding())
+                            }
+                        }
+                    }
                 }
             } else {
                 Column(
                     Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                        .padding(12.dp),
                 ) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.large,
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    ) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            ProfileBlock(model, big = false, onClick = { showAccounts = true })
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                            VersionRow(model, onPick = { showInstances = true }, onEdit = actions::editInstance)
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
                     Column(
                         Modifier
                             .weight(1f)
                             .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        AccountCard(model, onSwitch = { showAccounts = true })
-                        InstanceCard(
-                            model,
-                            onSwitch = { showInstances = true },
-                            onEdit = actions::editInstance,
-                        )
-                        QuickActions(actions)
+                        items.forEach { ActionRow(it) }
                     }
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(8.dp))
                     PlayButton(onClick = actions::play, modifier = Modifier.navigationBarsPadding())
                 }
             }
@@ -189,25 +227,32 @@ fun LimeHome(model: LimeHomeModel, actions: LimeHomeActions) {
 }
 
 @Composable
-private fun SectionCard(title: String, content: @Composable () -> Unit) {
-    Card(
+private fun ActionRow(item: ActionItem) {
+    Surface(
+        onClick = item.onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            Icon(item.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             Text(
-                title,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
+                item.label,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-            content()
         }
     }
 }
 
 @Composable
-private fun Avatar(bitmap: androidx.compose.ui.graphics.ImageBitmap?, fallbackIcon: Boolean, size: Int = 56) {
+private fun Avatar(bitmap: ImageBitmap?, fallbackIcon: Boolean, size: Int = 56) {
     Surface(
         modifier = Modifier.size(size.dp),
         shape = if (fallbackIcon) RoundedCornerShape(14.dp) else CircleShape,
@@ -223,43 +268,79 @@ private fun Avatar(bitmap: androidx.compose.ui.graphics.ImageBitmap?, fallbackIc
             Icon(
                 Icons.Rounded.Person,
                 contentDescription = null,
-                modifier = Modifier.padding(12.dp),
+                modifier = Modifier.padding((size / 5).dp),
                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
             )
         }
     }
 }
 
+/** Аккаунт: большая карточка по центру (ландшафт) или компактная строка (портрет). */
 @Composable
-private fun AccountCard(model: LimeHomeModel, onSwitch: () -> Unit) {
-    SectionCard("АККАУНТ") {
-        val acc = model.currentAccount
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Avatar(acc?.face, fallbackIcon = false)
+private fun ProfileBlock(model: LimeHomeModel, big: Boolean, onClick: () -> Unit) {
+    val acc = model.currentAccount
+    val name = acc?.name ?: "Нет аккаунта"
+    val type = if (acc != null) acc.typeLabel else "Нажмите, чтобы войти"
+    if (big) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.medium)
+                .clickable(onClick = onClick)
+                .padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Avatar(acc?.face, fallbackIcon = false, size = 96)
+            Text(
+                name,
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                type,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
+    } else {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.medium)
+                .clickable(onClick = onClick),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Avatar(acc?.face, fallbackIcon = false, size = 56)
             Column(Modifier.weight(1f)) {
-                Text(
-                    acc?.name ?: "Нет аккаунта",
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    if (acc != null) acc.typeLabel else "Добавьте аккаунт, чтобы играть",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text(name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(type, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            FilledTonalButton(onClick = onSwitch) { Text(if (acc != null) "Сменить" else "Войти") }
         }
     }
 }
 
 @Composable
-private fun InstanceCard(model: LimeHomeModel, onSwitch: () -> Unit, onEdit: () -> Unit) {
-    SectionCard("ВЕРСИЯ") {
-        val inst = model.currentInstance
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Avatar(inst?.icon, fallbackIcon = true)
+private fun VersionRow(model: LimeHomeModel, onPick: () -> Unit, onEdit: () -> Unit) {
+    val inst = model.currentInstance
+    Row(
+        Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(
+            Modifier
+                .weight(1f)
+                .clip(MaterialTheme.shapes.medium)
+                .clickable(onClick = onPick),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Avatar(inst?.icon, fallbackIcon = true, size = 44)
             Column(Modifier.weight(1f)) {
                 Text(
                     inst?.name ?: if (model.loaded) "Версия не выбрана" else "Загрузка…",
@@ -269,33 +350,16 @@ private fun InstanceCard(model: LimeHomeModel, onSwitch: () -> Unit, onEdit: () 
                 )
                 Text(
                     inst?.version.orEmpty(),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            IconButton(onClick = onEdit) {
-                Icon(Icons.Rounded.Edit, contentDescription = "Настроить версию")
-            }
-            FilledTonalButton(onClick = onSwitch) { Text("Выбрать") }
         }
-    }
-}
-
-@Composable
-private fun QuickActions(actions: LimeHomeActions) {
-    Row(
-        Modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        AssistChip(onClick = actions::openControls, label = { Text("Управление") })
-        AssistChip(onClick = actions::openGameFolder, label = { Text("Папка игры") })
-        AssistChip(onClick = actions::installJar, label = { Text("Установить .jar") })
-        AssistChip(onClick = actions::shareLogs, label = { Text("Логи") })
-        AssistChip(onClick = actions::openGamepadMapper, label = { Text("Геймпад") })
-        AssistChip(onClick = actions::openNews, label = { Text("Новости") })
-        AssistChip(onClick = actions::openCommunity, label = { Text("Сообщество") })
+        IconButton(onClick = onEdit) {
+            Icon(Icons.Rounded.Settings, contentDescription = "Настроить версию")
+        }
     }
 }
 
@@ -305,57 +369,16 @@ private fun PlayButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .height(64.dp),
-        shape = RoundedCornerShape(24.dp),
+            .height(60.dp),
+        shape = RoundedCornerShape(22.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
         ),
     ) {
-        Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(30.dp))
+        Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(28.dp))
         Spacer(Modifier.size(8.dp))
-        Text("ИГРАТЬ", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-private fun PlayPanel(model: LimeHomeModel, onPlay: () -> Unit, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-    ) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    "LimeLauncher",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-                Text(
-                    "Готов к игре",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-                val inst = model.currentInstance
-                if (inst != null) {
-                    SuggestionChip(onClick = {}, label = { Text("${inst.name}  ${inst.version}") })
-                }
-                if (model.loaded && model.currentAccount == null) {
-                    Text(
-                        "Сначала добавьте аккаунт",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                }
-            }
-            PlayButton(onClick = onPlay, modifier = Modifier.navigationBarsPadding())
-        }
+        Text("ИГРАТЬ", fontSize = 19.sp, fontWeight = FontWeight.Bold)
     }
 }
 

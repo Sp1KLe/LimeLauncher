@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Тёмная тема LimeLauncher. -->
+<resources>
+    <color name="lime_bg">#11140E</color>
+    <color name="lime_bar">#1E2219</color>
+    <color name="lime_surface_hi">#282C23</color>
+    <color name="lime_outline">#43483C</color>
+    <color name="lime_text">#E2E3D8</color>
+    <color name="lime_text2">#C3C8B8</color>
+</resources>
