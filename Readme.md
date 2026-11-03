@@ -19,13 +19,13 @@
 
 ## Сборка APK
 
-Ничего ставить не нужно: GitHub Actions собирает проект сам. Откройте вкладку **Actions → Build APK**, дождитесь зелёной галочки и скачайте `LimeLauncher-apk` из раздела Artifacts.
+Ничего ставить не нужно: GitHub Actions собирает проект сам. Откройте вкладку **Actions → Build LimeLauncher**, дождитесь зелёной галочки и скачайте `LimeLauncher-full-<номер>` из раздела Artifacts. Номер сборки также написан в названии установленного приложения.
 
 Локально (если есть ПК): `cargo test -p lime-core`.
 
 ## Полный лаунчер с Java (Minecraft 1.18.2 и другие)
 
-Рабочий запуск игры обеспечивает открытый проект [PojavLauncher](https://github.com/TeamPojavLauncher/PojavLauncher) (лицензия LGPL-3.0): в нём уже есть Java 8/17/21 для arm64, слой графики и поддержка почти всех версий. Workflow **Build LimeLauncher (full, with Java)** скачивает его зафиксированную версию, накладывает наши изменения (`scripts/apply-lime.sh`, патчи из `patches/`) и собирает APK `LimeLauncher-full`. Для 1.18.2 нужна Java 17, она входит в сборку.
+Рабочий запуск игры обеспечивает открытый проект [PojavLauncher](https://github.com/TeamPojavLauncher/PojavLauncher) (лицензия LGPL-3.0): в нём уже есть Java 8/17/21 для arm64, слой графики и поддержка почти всех версий. Единственный workflow **Build LimeLauncher** (`.github/workflows/build.yml`) скачивает его зафиксированную версию, накладывает наши изменения (`scripts/apply-lime.sh`, патчи из `patches/`) и собирает APK `LimeLauncher-full-<номер>`. Для 1.18.2 нужна Java 17, она входит в сборку.
 
 Огромное спасибо авторам PojavLauncher, MojoLauncher, GL4ES и LWJGL. Наши изменения распространяются в открытом виде в этом репозитории.
 

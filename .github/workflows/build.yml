@@ -1,13 +1,20 @@
-name: Build APK
+name: Build LimeLauncher
+
+# ЕДИНСТВЕННАЯ сборка проекта. Всегда собирает полный лаунчер (с Java, Minecraft 1.18.2).
+# Основа: PojavLauncher (LGPL-3.0), поверх накладываются изменения LimeLauncher.
+# Скачивать нужно артефакт "LimeLauncher-full-<номер сборки>".
 
 on:
   push:
-  pull_request:
   workflow_dispatch:
+
+env:
+  POJAV_REPO: https://github.com/TeamPojavLauncher/PojavLauncher
+  POJAV_SHA: 94305d6a0c25bc4f415df1f52bac6f51870d5ad1
 
 jobs:
   test:
-    name: Rust tests
+    name: Rust core tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,40 +22,59 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo test -p lime-core --release
 
-  apk:
-    name: Android APK
-    needs: test
-    runs-on: ubuntu-latest
+  full:
+    name: Full launcher APK
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Checkout LimeLauncher
+        uses: actions/checkout@v4
         with:
-          targets: aarch64-linux-android
-      - uses: Swatinem/rust-cache@v2
+          path: lime
+
+      - name: Fetch PojavLauncher (pinned)
+        run: |
+          mkdir pojav && cd pojav
+          git init -q
+          git remote add origin "$POJAV_REPO"
+          git fetch --depth 1 origin "$POJAV_SHA"
+          git checkout -q FETCH_HEAD
+          git submodule update --init --recursive --depth 1
+
+      - name: Apply LimeLauncher changes
+        env:
+          LIME_BUILD: ${{ github.run_number }}
+        run: bash lime/scripts/apply-lime.sh pojav
 
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
-      - name: Install cargo-ndk
-        run: cargo install cargo-ndk --locked
-
-      - name: Build Rust core for Android (arm64)
-        run: |
-          export ANDROID_NDK_HOME="${ANDROID_NDK_LATEST_HOME:-$ANDROID_NDK_ROOT}"
-          echo "NDK: $ANDROID_NDK_HOME"
-          cargo ndk -t arm64-v8a -o android/app/src/main/jniLibs build --release -p lime-core --features jni-bridge
+      - name: Get LTW (graphics layer)
+        uses: dawidd6/action-download-artifact@v6
+        continue-on-error: true
+        with:
+          repo: MojoLauncher/LTW
+          workflow: android.yml
+          workflow_conclusion: success
+          name: output-aar
+          path: pojav/app_pojavlauncher/libs
 
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.7"
+          gradle-version: "8.14.5"
 
-      - name: Build release APK
-        run: gradle -p android assembleRelease --no-daemon
+      - name: Build APK (with Java runtimes)
+        working-directory: pojav
+        run: gradle :app_pojavlauncher:assembleFullDebug --no-daemon
+
+      - name: Collect APK
+        run: |
+          mkdir out
+          cp pojav/app_pojavlauncher/build/outputs/apk/full/debug/*.apk "out/LimeLauncher-${{ github.run_number }}.apk"
+          ls -la out
 
       - uses: actions/upload-artifact@v4
         with:
-          name: LimeLauncher-apk
-          path: android/app/build/outputs/apk/release/*.apk
+          name: LimeLauncher-full-${{ github.run_number }}
+          path: out/LimeLauncher-${{ github.run_number }}.apk
