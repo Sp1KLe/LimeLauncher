@@ -25,6 +25,8 @@ jobs:
   full:
     name: Full launcher APK
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write   # нужно, чтобы выкладывать APK в Releases
     steps:
       - name: Checkout LimeLauncher
         uses: actions/checkout@v4
@@ -74,7 +76,32 @@ jobs:
           cp pojav/app_pojavlauncher/build/outputs/apk/full/debug/*.apk "out/LimeLauncher-${{ github.run_number }}.apk"
           ls -la out
 
+      # Проверка перед публикацией: если APK битый или не подписан, сборка падает,
+      # а не выкладывает файл, который телефон назовёт «недействительным пакетом».
+      - name: Verify APK (zip, signature, manifest)
+        run: |
+          set -e
+          APK="out/LimeLauncher-${{ github.run_number }}.apk"
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          echo "build-tools: $BT"
+          unzip -tq "$APK"
+          "$BT/apksigner" verify --verbose --print-certs "$APK"
+          "$BT/aapt" dump badging "$APK" | grep -E "^package:|^sdkVersion|^targetSdkVersion|^application-label:|^native-code" || true
+          ls -l "$APK"
+
       - uses: actions/upload-artifact@v4
         with:
           name: LimeLauncher-full-${{ github.run_number }}
           path: out/LimeLauncher-${{ github.run_number }}.apk
+
+      # Прямая ссылка на .apk без zip: открывается на телефоне в браузере (раздел Releases).
+      - name: Publish release (direct APK download)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "build-${{ github.run_number }}" \
+            "out/LimeLauncher-${{ github.run_number }}.apk" \
+            --repo "${{ github.repository }}" \
+            --title "LimeLauncher #${{ github.run_number }}" \
+            --notes "Сборка #${{ github.run_number }} (коммит ${GITHUB_SHA::7}). Скачайте .apk и установите." \
+            --latest
