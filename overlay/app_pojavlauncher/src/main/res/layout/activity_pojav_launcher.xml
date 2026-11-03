@@ -1,0 +1,71 @@
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF11140E">
+
+    <!-- Логика входа в аккаунты живёт в AccountSpinner, поэтому он остаётся в иерархии,
+         но не виден: аккаунтами теперь управляет экран Material 3. -->
+    <com.kdt.mcgui.AccountSpinner
+        android:id="@+id/account_spinner"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:visibility="invisible"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Верхняя панель в стиле Material 3 -->
+    <View
+        android:id="@+id/lime_top_bar"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/_52sdp"
+        android:background="#FF1E2219"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/lime_title"
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/_52sdp"
+        android:gravity="center_vertical"
+        android:paddingStart="20dp"
+        android:text="LimeLauncher"
+        android:textColor="#FFA6E36E"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="HardcodedText,RtlSymmetry" />
+
+    <ImageButton
+        android:id="@+id/setting_button"
+        android:layout_width="@dimen/_52sdp"
+        android:layout_height="@dimen/_52sdp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_px_sliders"
+        android:tint="#FFA6E36E"
+        android:scaleType="fitCenter"
+        android:paddingVertical="@dimen/_8sdp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="UseAppTint" />
+
+    <!-- Holding most of the dynamic content -->
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/container_fragment"
+        android:name="net.kdt.pojavlaunch.fragments.MainMenuFragment"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/progress_layout"
+        app:layout_constraintTop_toBottomOf="@+id/lime_top_bar" />
+
+    <com.kdt.mcgui.ProgressLayout
+        android:id="@+id/progress_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
