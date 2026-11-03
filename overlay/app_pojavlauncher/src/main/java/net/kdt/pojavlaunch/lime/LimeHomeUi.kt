@@ -8,7 +8,7 @@ object LimeHomeUi {
     @JvmStatic
     fun setup(view: ComposeView, actions: LimeHomeActions) {
         val model = LimeHomeModel(view.resources)
-        view.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        view.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
         view.setContent {
             LimeTheme {
                 LimeHome(model, actions)

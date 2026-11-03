@@ -15,6 +15,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.compose.ui.platform.ComposeView;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+import androidx.lifecycle.ViewTreeLifecycleOwner;
+import androidx.lifecycle.ViewTreeViewModelStoreOwner;
+import androidx.savedstate.ViewTreeSavedStateRegistryOwner;
 
 import com.kdt.mcgui.ProgressLayout;
 
@@ -51,6 +55,17 @@ public class MainMenuFragment extends Fragment implements LimeHomeActions {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        // Старые версии AppCompat/Fragment не выдают окну владельцев жизненного цикла,
+        // а Compose без них падает. Выдаём их вручную (если ещё не выданы).
+        FragmentActivity activity = requireActivity();
+        View decor = activity.getWindow().getDecorView();
+        if (ViewTreeLifecycleOwner.get(decor) == null)
+            ViewTreeLifecycleOwner.set(decor, activity);
+        if (ViewTreeViewModelStoreOwner.get(decor) == null)
+            ViewTreeViewModelStoreOwner.set(decor, activity);
+        if (ViewTreeSavedStateRegistryOwner.get(decor) == null)
+            ViewTreeSavedStateRegistryOwner.set(decor, activity);
+
         ComposeView composeView = view.findViewById(R.id.lime_compose);
         LimeHomeUi.setup(composeView, this);
     }
