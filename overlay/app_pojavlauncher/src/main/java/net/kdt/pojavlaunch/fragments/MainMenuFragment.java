@@ -30,8 +30,10 @@ import net.kdt.pojavlaunch.extra.ExtraConstants;
 import net.kdt.pojavlaunch.extra.ExtraCore;
 import net.kdt.pojavlaunch.instances.Instance;
 import net.kdt.pojavlaunch.instances.Instances;
+import net.kdt.pojavlaunch.lime.LimeCrashWatch;
 import net.kdt.pojavlaunch.lime.LimeHomeActions;
 import net.kdt.pojavlaunch.lime.LimeHomeUi;
+import net.kdt.pojavlaunch.lime.LimeModsFragment;
 import net.kdt.pojavlaunch.utils.FileUtils;
 import net.kdt.pojavlaunch.utils.jre.GameRunner;
 
@@ -111,6 +113,11 @@ public class MainMenuFragment extends Fragment implements LimeHomeActions {
     }
 
     @Override
+    public void openMods() {
+        Tools.swapFragment(requireActivity(), LimeModsFragment.class, LimeModsFragment.TAG, null);
+    }
+
+    @Override
     public void openControls() {
         startActivity(new Intent(requireContext(), CustomControlsActivity.class));
     }
@@ -163,6 +170,8 @@ public class MainMenuFragment extends Fragment implements LimeHomeActions {
     public void onResume() {
         super.onResume();
         ExtraCore.setValue(ExtraConstants.REFRESH_ACCOUNT_SPINNER, true);
+        // Если игра только что закрылась неожиданно — показываем причину из лога.
+        LimeCrashWatch.checkAfterGame(requireActivity(), 0);
     }
 
     private void runInstallerWithConfirmation() {

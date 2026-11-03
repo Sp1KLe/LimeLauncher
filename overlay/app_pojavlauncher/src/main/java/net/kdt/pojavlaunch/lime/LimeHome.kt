@@ -77,6 +77,7 @@ interface LimeHomeActions {
     fun editInstance()
     fun createInstance()
     fun openControls()
+    fun openMods()
     fun openGameFolder()
     fun shareLogs()
     fun installJar()
@@ -102,6 +103,7 @@ fun LimeHome(model: LimeHomeModel, actions: LimeHomeActions) {
     }
 
     val items = listOf(
+        ActionItem("Моды: поиск и установка", LimeIcons.Extension, actions::openMods),
         ActionItem("О лаунчере и новости", Icons.Rounded.Info, actions::openNews),
         ActionItem("Раскладки управления", LimeIcons.Gamepad, actions::openControls),
         ActionItem("Открыть папку игры", LimeIcons.Folder, actions::openGameFolder),

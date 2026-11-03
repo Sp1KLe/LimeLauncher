@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Скруглённая кнопка в стиле Material 3 для старых экранов (светлая/тёмная тема берётся из lime_* цветов). -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="?android:attr/colorControlHighlight">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/lime_surface_hi" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+</ripple>

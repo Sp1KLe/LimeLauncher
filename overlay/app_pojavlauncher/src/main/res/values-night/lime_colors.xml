@@ -7,4 +7,6 @@
     <color name="lime_outline">#43483C</color>
     <color name="lime_text">#E2E3D8</color>
     <color name="lime_text2">#C3C8B8</color>
+    <color name="lime_primary">#A6E36E</color>
+    <color name="lime_on_primary">#173800</color>
 </resources>

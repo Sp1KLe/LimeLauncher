@@ -51,10 +51,31 @@ STYLES="$RES/values/styles.xml"
 sed -i 's|parent="@style/Theme.AppCompat.NoActionBar"|parent="@style/Theme.AppCompat.DayNight.NoActionBar"|' "$STYLES"
 grep -q "Theme.AppCompat.DayNight.NoActionBar" "$STYLES" || { echo "Не удалось включить DayNight"; exit 1; }
 
+# Старые экраны: убираем «пиксельные» ползунки/переключатели/кнопки, красим акцент в лайм,
+# скругляем окна. Всё остальное (тексты, фон) уже берётся из светлых/тёмных lime_* цветов.
+sed -i -E '/minepb_progress/d; /mineknob/d; /trackTintMode/d' "$STYLES"
+sed -i -E 's|@drawable/button_flat_toggle|@drawable/lime_button|; s|@drawable/button_flat|@drawable/lime_button|' "$STYLES"
+sed -i -E 's|(<item name="dialogCornerRadius">)0dp|\128dp|' "$STYLES"
+sed -i -E 's|(<style name="MojoLauncher" parent="[^"]*">)|\1\n        <item name="colorAccent">@color/lime_primary</item>\n        <item name="colorPrimary">@color/lime_primary</item>\n        <item name="colorControlActivated">@color/lime_primary</item>|' "$STYLES"
+grep -q "lime_button" "$STYLES" || { echo "Не удалось перекрасить кнопки"; exit 1; }
+grep -q "colorAccent" "$STYLES" || { echo "Не удалось задать акцентный цвет"; exit 1; }
+
 # Сохранённая тема применяется при старте приложения (по умолчанию — как в системе).
 APP="$POJAV/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/PojavApplication.java"
 sed -i 's|^\([[:space:]]*\)ContextExecutor.setApplication(this);|&\n\1net.kdt.pojavlaunch.lime.LimeThemeStore.apply(this);|' "$APP"
 grep -q "LimeThemeStore.apply" "$APP" || { echo "Не удалось подключить тему в PojavApplication"; exit 1; }
+
+# 3c. Горизонтальная ориентация для экранов лаунчера.
+MANIFEST="$POJAV/app_pojavlauncher/src/main/AndroidManifest.xml"
+sed -i 's|\(android:name="net.kdt.pojavlaunch.LauncherActivity"\)|\1\n            android:screenOrientation="sensorLandscape"|' "$MANIFEST"
+grep -A1 'net.kdt.pojavlaunch.LauncherActivity' "$MANIFEST" | grep -q sensorLandscape \
+  || { echo "Не удалось включить ландшафт для LauncherActivity"; exit 1; }
+
+# 3d. «Чёрный ящик»: GameActivity (процесс игры) ставит метку старта.
+GAMEACT="$POJAV/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/game/GameActivity.java"
+sed -i 's|^\([[:space:]]*\)instance = Instances.loadSelectedInstance();|\1net.kdt.pojavlaunch.lime.LimeCrashWatch.gameStarted();\n&|' "$GAMEACT"
+grep -q "LimeCrashWatch.gameStarted" "$GAMEACT" || { echo "Не удалось подключить LimeCrashWatch в GameActivity"; exit 1; }
+[ "$(grep -c "LimeCrashWatch.gameStarted" "$GAMEACT")" = "1" ] || { echo "LimeCrashWatch вставлен не один раз"; exit 1; }
 
 # 4. Патчи из папки patches/ (применяются по алфавиту).
 PATCHES="$(dirname "$0")/../patches"

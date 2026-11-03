@@ -29,6 +29,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
@@ -54,7 +55,14 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.findViewTreeSavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import net.kdt.pojavlaunch.LauncherActivity
 import net.kdt.pojavlaunch.R
+import net.kdt.pojavlaunch.Tools
+import net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceControlFragment
+import net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceExperimentalFragment
+import net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceJavaFragment
+import net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceMiscellaneousFragment
+import net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceVideoFragment
 import net.kdt.pojavlaunch.fragments.MainMenuFragment
 
 private fun findActivity(context: Context): FragmentActivity? {
@@ -156,6 +164,12 @@ fun LimeTopBar(activity: FragmentActivity?) {
     if (showSettings) {
         SettingsSheet(
             onDismiss = { showSettings = false },
+            onOpen = { cls ->
+                showSettings = false
+                if (activity != null && !activity.supportFragmentManager.isStateSaved) {
+                    Tools.swapFragment(activity, cls, LauncherActivity.SETTING_FRAGMENT_TAG, null)
+                }
+            },
             onAdvanced = {
                 showSettings = false
                 clickLegacySettingsButton()
@@ -166,7 +180,7 @@ fun LimeTopBar(activity: FragmentActivity?) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SettingsSheet(onDismiss: () -> Unit, onAdvanced: () -> Unit) {
+private fun SettingsSheet(onDismiss: () -> Unit, onOpen: (Class<out Fragment>) -> Unit, onAdvanced: () -> Unit) {
     val context = LocalContext.current
     var mode by remember { mutableStateOf(LimeThemeStore.mode(context)) }
 
@@ -214,8 +228,35 @@ private fun SettingsSheet(onDismiss: () -> Unit, onAdvanced: () -> Unit) {
             }
 
             Spacer(Modifier.height(12.dp))
-            Button(onClick = onAdvanced, modifier = Modifier.fillMaxWidth()) {
-                Text("Расширенные настройки (видео, управление, Java)")
+            Text("Разделы", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            val sections = listOf<Pair<String, Class<out Fragment>>>(
+                "Видео и рендерер" to LauncherPreferenceVideoFragment::class.java,
+                "Управление и чувствительность" to LauncherPreferenceControlFragment::class.java,
+                "Java и память" to LauncherPreferenceJavaFragment::class.java,
+                "Разное" to LauncherPreferenceMiscellaneousFragment::class.java,
+                "Экспериментальные" to LauncherPreferenceExperimentalFragment::class.java,
+            )
+            sections.forEach { (title, cls) ->
+                Surface(
+                    onClick = { onOpen(cls) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Rounded.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(16.dp))
+                        Text(title, style = MaterialTheme.typography.titleMedium)
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+            }
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(onClick = onAdvanced, modifier = Modifier.fillMaxWidth()) {
+                Text("Все настройки списком")
             }
             Spacer(Modifier.height(8.dp))
             Text(
