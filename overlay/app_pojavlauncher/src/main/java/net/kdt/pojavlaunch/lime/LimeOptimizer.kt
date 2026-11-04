@@ -16,7 +16,7 @@ object LimeOptimizer {
         "mipmapLevels" to "0",
         "entityShadows" to "false",
         "entityDistanceScaling" to "0.75",
-        "maxFps" to "60",
+        "maxFps" to "260",
         "enableVsync" to "false",
         "bobView" to "false",
     )

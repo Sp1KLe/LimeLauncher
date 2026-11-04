@@ -13,10 +13,10 @@ for f in "$RES"/values/strings.xml "$RES"/values/strings_untranslatable.xml; do
   sed -i -E "s|(<string name=\"app_short_name\"[^>]*>)PojavLauncher|\1LimeLauncher|" "$f"
 done
 # Подпись под иконкой задаётся в build.gradle (resValue app_name) для каждого типа сборки.
-sed -i -E "s|(resValue \"string\", \"app_name\", \")PojavLauncher[^\"]*\"|\1LimeLauncher #${BUILD}\"|" \
+sed -i -E "s|(resValue \"string\", \"app_name\", \")PojavLauncher[^\"]*\"|\1LimeLauncher\"|" \
   "$POJAV/app_pojavlauncher/build.gradle"
 grep -n 'resValue "string", "app_name"' "$POJAV/app_pojavlauncher/build.gradle"
-grep -q "LimeLauncher #${BUILD}" "$POJAV/app_pojavlauncher/build.gradle" || { echo "Не удалось переименовать приложение"; exit 1; }
+grep -q '"app_name", "LimeLauncher"' "$POJAV/app_pojavlauncher/build.gradle" || { echo "Не удалось переименовать приложение"; exit 1; }
 
 # 2. Интерфейс Material 3: файлы из overlay/ копируются поверх исходников Pojav
 #    (новый домашний экран на Compose, верхняя панель, обновлённый MainMenuFragment).
@@ -88,11 +88,16 @@ grep -q "lime_text" "$RES/layout/view_progress.xml" || { echo "Не удалос
 sed -i 's|titleTextView.setTextColor(Color.WHITE);|titleTextView.setTextColor(androidx.core.content.ContextCompat.getColor(getContext(), net.kdt.pojavlaunch.R.color.lime_text));|' "$POJAV/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/prefs/CustomSeekBarPreference.java"
 grep -q "lime_text" "$POJAV/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/prefs/CustomSeekBarPreference.java" || { echo "Не удалось перекрасить ползунок"; exit 1; }
 
-# 3f. Оптимизация Java: Serial GC (меньше потоков и памяти на слабом телефоне), без perf-данных.
+# 3f. Java: отключаем сбор perf-данных JVM (чуть меньше нагрузки). Сборщик мусора не меняем —
+#     Serial GC снижал FPS.
 JR="$POJAV/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/utils/jre/JavaRunner.java"
-sed -i 's|^\([[:space:]]*\)runtimeArgs.addAll(getJavaArgs(runtimeHomeDir.getAbsolutePath(), vmArgs));|\1boolean limeOwnGc = false;\n\1for(String limeA : vmArgs) if(limeA.contains("GC") \|\| limeA.startsWith("-Xshare")) limeOwnGc = true;\n&|' "$JR"
-sed -i 's|^\([[:space:]]*\)runtimeArgs.add("-XX:ActiveProcessorCount=" + java.lang.Runtime.getRuntime().availableProcessors());|&\n\1if(!limeOwnGc) runtimeArgs.add("-XX:+UseSerialGC");\n\1runtimeArgs.add("-XX:-UsePerfData");|' "$JR"
-grep -q "limeOwnGc = false" "$JR" && grep -q "UseSerialGC" "$JR" || { echo "Не удалось добавить флаги JVM"; exit 1; }
+sed -i 's|^\([[:space:]]*\)runtimeArgs.add("-XX:ActiveProcessorCount=" + java.lang.Runtime.getRuntime().availableProcessors());|&\n\1runtimeArgs.add("-XX:-UsePerfData");|' "$JR"
+grep -q "UsePerfData" "$JR" || { echo "Не удалось добавить флаги JVM"; exit 1; }
+
+# 3g. Управление в стиле Bedrock: свежий default.json копируется один раз (метка), дальше правки пользователя не трогаются.
+ASSETMGR="$POJAV/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/tasks/AsyncAssetManager.java"
+sed -i 's|Tools.copyAssetFile(ctx, "default.json", Tools.CTRLMAP_PATH, false);|net.kdt.pojavlaunch.lime.LimeControls.install(ctx);|' "$ASSETMGR"
+grep -q "LimeControls.install" "$ASSETMGR" || { echo "Не удалось подключить Bedrock-раскладку"; exit 1; }
 
 # 4. Патчи из папки patches/ (применяются по алфавиту).
 PATCHES="$(dirname "$0")/../patches"
