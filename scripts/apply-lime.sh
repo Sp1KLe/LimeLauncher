@@ -77,6 +77,23 @@ sed -i 's|^\([[:space:]]*\)instance = Instances.loadSelectedInstance();|\1net.kd
 grep -q "LimeCrashWatch.gameStarted" "$GAMEACT" || { echo "Не удалось подключить LimeCrashWatch в GameActivity"; exit 1; }
 [ "$(grep -c "LimeCrashWatch.gameStarted" "$GAMEACT")" = "1" ] || { echo "LimeCrashWatch вставлен не один раз"; exit 1; }
 
+
+# 3e. Остальной старый интерфейс: поле ввода в цвет темы, белый текст полосы загрузки -> цвет темы.
+MEDIT="$POJAV/app_pojavlauncher/src/main/java/com/kdt/mcgui/MineEditText.java"
+sed -i 's|setBackgroundColor(Color.parseColor("#131313"));|setBackgroundColor(androidx.core.content.ContextCompat.getColor(getContext(), net.kdt.pojavlaunch.R.color.lime_bar));|' "$MEDIT"
+grep -q "lime_bar" "$MEDIT" || { echo "Не удалось перекрасить MineEditText"; exit 1; }
+sed -i 's|android:textColor="@android:color/white"|android:textColor="@color/lime_text"|' "$RES/layout/view_progress.xml"
+grep -q "lime_text" "$RES/layout/view_progress.xml" || { echo "Не удалось перекрасить полосу загрузки"; exit 1; }
+# Заголовок ползунка в настройках больше не принудительно белый.
+sed -i 's|titleTextView.setTextColor(Color.WHITE);|titleTextView.setTextColor(androidx.core.content.ContextCompat.getColor(getContext(), net.kdt.pojavlaunch.R.color.lime_text));|' "$POJAV/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/prefs/CustomSeekBarPreference.java"
+grep -q "lime_text" "$POJAV/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/prefs/CustomSeekBarPreference.java" || { echo "Не удалось перекрасить ползунок"; exit 1; }
+
+# 3f. Оптимизация Java: Serial GC (меньше потоков и памяти на слабом телефоне), без perf-данных.
+JR="$POJAV/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/utils/jre/JavaRunner.java"
+sed -i 's|^\([[:space:]]*\)runtimeArgs.addAll(getJavaArgs(runtimeHomeDir.getAbsolutePath(), vmArgs));|\1boolean limeOwnGc = false;\n\1for(String limeA : vmArgs) if(limeA.contains("GC") \|\| limeA.startsWith("-Xshare")) limeOwnGc = true;\n&|' "$JR"
+sed -i 's|^\([[:space:]]*\)runtimeArgs.add("-XX:ActiveProcessorCount=" + java.lang.Runtime.getRuntime().availableProcessors());|&\n\1if(!limeOwnGc) runtimeArgs.add("-XX:+UseSerialGC");\n\1runtimeArgs.add("-XX:-UsePerfData");|' "$JR"
+grep -q "limeOwnGc = false" "$JR" && grep -q "UseSerialGC" "$JR" || { echo "Не удалось добавить флаги JVM"; exit 1; }
+
 # 4. Патчи из папки patches/ (применяются по алфавиту).
 PATCHES="$(dirname "$0")/../patches"
 if [ -d "$PATCHES" ]; then

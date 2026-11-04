@@ -34,6 +34,7 @@ import net.kdt.pojavlaunch.lime.LimeCrashWatch;
 import net.kdt.pojavlaunch.lime.LimeHomeActions;
 import net.kdt.pojavlaunch.lime.LimeHomeUi;
 import net.kdt.pojavlaunch.lime.LimeModsFragment;
+import net.kdt.pojavlaunch.lime.LimeOptimizer;
 import net.kdt.pojavlaunch.utils.FileUtils;
 import net.kdt.pojavlaunch.utils.jre.GameRunner;
 
@@ -80,6 +81,7 @@ public class MainMenuFragment extends Fragment implements LimeHomeActions {
             return;
         }
         File gamedir = instance.getGameDirectory();
+        LimeOptimizer.apply(gamedir, false);
 
         if (GameRunner.hasVkMod(gamedir)) {
             new AlertDialog.Builder(requireContext())
@@ -115,6 +117,19 @@ public class MainMenuFragment extends Fragment implements LimeHomeActions {
     @Override
     public void openMods() {
         Tools.swapFragment(requireActivity(), LimeModsFragment.class, LimeModsFragment.TAG, null);
+    }
+
+    @Override
+    public void optimize() {
+        Instance instance = Instances.loadSelectedInstance();
+        if(instance == null) {
+            Toast.makeText(requireContext(), R.string.no_instance, Toast.LENGTH_LONG).show();
+            return;
+        }
+        boolean ok = LimeOptimizer.apply(instance.getGameDirectory(), true);
+        Toast.makeText(requireContext(), ok
+                ? "Готово: дальность прорисовки 6, быстрая графика, меньше частиц и теней"
+                : "Не удалось изменить options.txt", Toast.LENGTH_LONG).show();
     }
 
     @Override
