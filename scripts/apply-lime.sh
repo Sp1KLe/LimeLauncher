@@ -88,11 +88,12 @@ grep -q "lime_text" "$RES/layout/view_progress.xml" || { echo "Не удалос
 sed -i 's|titleTextView.setTextColor(Color.WHITE);|titleTextView.setTextColor(androidx.core.content.ContextCompat.getColor(getContext(), net.kdt.pojavlaunch.R.color.lime_text));|' "$POJAV/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/prefs/CustomSeekBarPreference.java"
 grep -q "lime_text" "$POJAV/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/prefs/CustomSeekBarPreference.java" || { echo "Не удалось перекрасить ползунок"; exit 1; }
 
-# 3f. Java: отключаем сбор perf-данных JVM (чуть меньше нагрузки). Сборщик мусора не меняем —
-#     Serial GC снижал FPS.
+# 3f. Java: Serial GC (на слабом телефоне с маленькой кучей FPS заметно стабильнее, чем с G1),
+#     без perf-данных. Если игрок сам задал сборщик в аргументах — не вмешиваемся.
 JR="$POJAV/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/utils/jre/JavaRunner.java"
-sed -i 's|^\([[:space:]]*\)runtimeArgs.add("-XX:ActiveProcessorCount=" + java.lang.Runtime.getRuntime().availableProcessors());|&\n\1runtimeArgs.add("-XX:-UsePerfData");|' "$JR"
-grep -q "UsePerfData" "$JR" || { echo "Не удалось добавить флаги JVM"; exit 1; }
+sed -i 's|^\([[:space:]]*\)runtimeArgs.addAll(getJavaArgs(runtimeHomeDir.getAbsolutePath(), vmArgs));|\1boolean limeOwnGc = false;\n\1for(String limeA : vmArgs) if(limeA.contains("GC") \|\| limeA.startsWith("-Xshare")) limeOwnGc = true;\n&|' "$JR"
+sed -i 's|^\([[:space:]]*\)runtimeArgs.add("-XX:ActiveProcessorCount=" + java.lang.Runtime.getRuntime().availableProcessors());|&\n\1if(!limeOwnGc) runtimeArgs.add("-XX:+UseSerialGC");\n\1runtimeArgs.add("-XX:-UsePerfData");|' "$JR"
+grep -q "limeOwnGc = false" "$JR" && grep -q "UseSerialGC" "$JR" || { echo "Не удалось добавить флаги JVM"; exit 1; }
 
 # 3g. Управление в стиле Bedrock: свежий default.json копируется один раз (метка), дальше правки пользователя не трогаются.
 ASSETMGR="$POJAV/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/tasks/AsyncAssetManager.java"

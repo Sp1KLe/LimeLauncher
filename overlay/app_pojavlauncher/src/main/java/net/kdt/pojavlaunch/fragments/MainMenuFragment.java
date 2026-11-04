@@ -128,7 +128,7 @@ public class MainMenuFragment extends Fragment implements LimeHomeActions {
         }
         boolean ok = LimeOptimizer.apply(instance.getGameDirectory(), true);
         Toast.makeText(requireContext(), ok
-                ? "Готово: дальность прорисовки 6, быстрая графика, без лимита FPS"
+                ? "Готово: дальность прорисовки 6, быстрая графика, лимит 60 FPS"
                 : "Не удалось изменить options.txt", Toast.LENGTH_LONG).show();
     }
 
