@@ -144,6 +144,42 @@ class LimeModsModel(
         }
     }
 
+    /** Пакет оптимизации для Fabric: моды, повышающие FPS без Sodium (ему нужен OpenGL 3.2). */
+    fun installPerformancePack() {
+        if (progress.containsKey("pack")) return
+        val dir = modsDir()
+        if (dir == null) {
+            notice = "Не выбрана версия игры. Выберите её на главном экране."
+            return
+        }
+        if (loader != "fabric" && loader != "quilt") {
+            notice = "Пакет оптимизации нужен для Fabric. Установите Fabric 1.18.2 для этой версии."
+            return
+        }
+        val v = mcVersion
+        val l = loader
+        progress["pack"] = "Подготовка…"
+        PojavApplication.sExecutorService.execute {
+            val ok = ArrayList<String>()
+            val failed = ArrayList<String>()
+            dir.mkdirs()
+            for (slug in listOf("lithium", "ferrite-core", "starlight", "entityculling", "modernfix")) {
+                try {
+                    installProject(slug, HashSet(), 0, "pack", dir, v, l, ArrayList())
+                    ok.add(slug)
+                } catch (e: Exception) {
+                    failed.add(slug)
+                }
+            }
+            ui {
+                progress.remove("pack")
+                notice = "Установлено: ${ok.joinToString(", ").ifEmpty { "ничего" }}" +
+                    if (failed.isEmpty()) "" else ". Не нашлось для $v: ${failed.joinToString(", ")}"
+            }
+            refreshInstalled()
+        }
+    }
+
     private fun installProject(
         id: String, visited: MutableSet<String>, depth: Int, rootId: String,
         dir: File, v: String, l: String, installed: MutableList<String>,

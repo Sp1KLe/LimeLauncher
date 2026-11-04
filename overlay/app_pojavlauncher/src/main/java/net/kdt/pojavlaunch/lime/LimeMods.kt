@@ -205,6 +205,14 @@ fun LimeModsScreen(model: LimeModsModel, onInstallLoader: () -> Unit) {
                 }
 
                 if (tab == 0) {
+                    Button(
+                        onClick = { model.installPerformancePack() },
+                        enabled = !model.progress.containsKey("pack"),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(model.progress["pack"]?.let { "Пакет оптимизации: $it" }
+                            ?: "Пакет оптимизации FPS (Lithium, FerriteCore, Starlight, EntityCulling, ModernFix)")
+                    }
                     OutlinedTextField(
                         value = model.query,
                         onValueChange = { model.query = it },
