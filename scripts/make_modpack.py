@@ -35,7 +35,7 @@ def main():
     mc, out = sys.argv[1], sys.argv[2]
     os.makedirs(out, exist_ok=True)
     zpath = os.path.join(out, f"LimeLauncher-fps-mods-{mc}.zip")
-    report, got, seen = [], [], set()
+    report, got, seen, files = [], [], set(), set()
 
     def add(slug, depth, z):
         if slug in seen or depth > 2:
@@ -55,6 +55,9 @@ def main():
         if sha1 and hashlib.sha1(data).hexdigest() != sha1:
             report.append(f"- {slug}: не совпала контрольная сумма, пропущен")
             return
+        if f["filename"] in files:
+            return
+        files.add(f["filename"])
         z.writestr("mods/" + f["filename"], data)
         got.append(f"{slug} -> {f['filename']}")
         for d in v.get("dependencies", []):
