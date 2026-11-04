@@ -105,3 +105,29 @@ jobs:
             --title "LimeLauncher #${{ github.run_number }}" \
             --notes "Сборка #${{ github.run_number }} (коммит ${GITHUB_SHA::7}). Скачайте .apk и установите." \
             --latest
+
+  modpacks:
+    name: Mod packs for FPS
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build mod packs (Modrinth)
+        run: |
+          mkdir -p packs
+          for v in 1.18.2 1.20.1 1.21.1 26.2; do
+            python3 scripts/make_modpack.py "$v" packs || echo "Версия $v пропущена"
+          done
+          ls -la packs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LimeLauncher-fps-mods-${{ github.run_number }}
+          path: packs/*.zip
+      - name: Publish to Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "mods-${{ github.run_number }}" packs/*.zip \
+            --title "FPS mod packs #${{ github.run_number }}" \
+            --notes "Архивы с модами для FPS (Fabric). Внутри README.txt с инструкцией."
